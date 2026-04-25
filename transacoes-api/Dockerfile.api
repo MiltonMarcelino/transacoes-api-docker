@@ -1,0 +1,26 @@
+FROM maven:3.9-eclipse-temurin-17 AS builder
+WORKDIR /app
+
+COPY pom.xml .
+COPY src ./src
+
+RUN mvn clean package -DskipTests
+
+FROM eclipse-temurin:17-jre
+
+RUN addgroup --system appuser && adduser --system --ingroup appuser appuser
+
+WORKDIR /app
+
+COPY --from=builder /app/target/*.jar app.jar
+
+RUN chown appuser:appuser app.jar
+USER appuser
+
+EXPOSE 8080
+
+ENV SPRING_DATASOURCE_URL=jdbc:mysql://mysql-dimdim:3306/db-dimdim \
+SPRING_DATASOURCE_USERNAME=user-dimdim \
+SPRING_DATASOURCE_PASSWORD=senha-dimdim
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
